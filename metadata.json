@@ -1,0 +1,8 @@
+{
+  "name": "FirmaDigital Chile",
+  "description": "Plataforma SaaS multiempresa para crear, administrar, firmar y verificar documentos electrónicos, contratos, hojas de cargo y EPP con firma simple y evidencias criptográficas según legislación chilena (Ley 19.799 y DT).",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

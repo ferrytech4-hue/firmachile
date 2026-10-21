@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # Base de Datos PostgreSQL 16 con RLS
+  postgres:
+    image: postgres:16-alpine
+    container_name: firmadigital_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: firmadigital_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword_dev2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d firmadigital_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Almacenamiento de Documentos S3 Privado (MinIO)
+  minio:
+    image: minio/minio:RELEASE.2024-03-15T01-07-19Z
+    container_name: firmadigital_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword2026
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  # Backend FastAPI
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: firmadigital_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_SERVER: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword_dev2026
+      POSTGRES_DB: firmadigital_db
+      POSTGRES_PORT: "5432"
+      SECRET_KEY: "super_secret_jwt_key_firmadigital_chile_2026_x7842"
+      S3_ENDPOINT_URL: "http://minio:9000"
+      S3_ACCESS_KEY: "minioadmin"
+      S3_SECRET_KEY: "minioadminpassword2026"
+    ports:
+      - "8000:8000"
+
+  # Frontend Responsive Web & PWA
+  frontend:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.frontend
+    container_name: firmadigital_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: "http://localhost:8000/api/v1"
+
+volumes:
+  pgdata:
+  miniodata:
